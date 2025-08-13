@@ -9,7 +9,10 @@ Goals over other stopwatch solutions
 * Provide splits
 * Provide standard output and logging using slog
 
-
+## Install
+```
+go get github.com/malcolm-davis/go-stopwatch
+```
 
 ## Example
 
