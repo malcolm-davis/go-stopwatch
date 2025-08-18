@@ -7,28 +7,47 @@ import (
 	"github.com/malcolm-davis/go-random"
 )
 
+// Define enum values using iota and bit shifting
+const (
+	LogStart = 1 << iota // 0001
+	LogSplit             // 0010
+	LogStop              // 0100
+)
+
 // Create a new watch, and allows for overriding the logging
-func New(processName string) *StopWatch {
+func New(actionName string, logOn ...int) *StopWatch {
+	//loggingOn := LogStart | LogSplit | LogStop
+	loggingOn := 0
+	if len(logOn) > 0 {
+		loggingOn = logOn[0]
+	}
 	id := random.RandString(12)
-	watch := &StopWatch{txnId: id, processName: processName, start: time.Time{}, stop: time.Time{}}
+	watch := &StopWatch{txnId: id, action: actionName, start: time.Time{}, stop: time.Time{}, logOn: loggingOn}
 	return watch
 }
 
 // Create a new watch, and start the timing
-func Start(processName string) *StopWatch {
+func Start(actionName string, logOn ...int) *StopWatch {
+	// loggingOn := LogStart | LogSplit | LogStop
+	loggingOn := 0
+	if len(logOn) > 0 {
+		loggingOn = logOn[0]
+	}
+
 	id := random.RandString(12)
-	watch := &StopWatch{txnId: id, processName: processName, start: time.Time{}, stop: time.Time{}}
+	watch := &StopWatch{txnId: id, action: actionName, start: time.Time{}, stop: time.Time{}, logOn: loggingOn}
 	return watch.Start()
 }
 
 // StartAt starts a new Watch at the time supplied.
-func StartAt(processName string, t time.Time) *StopWatch {
-	return &StopWatch{processName: processName, start: t, stop: time.Time{}}
+func StartAt(actionName string, t time.Time) *StopWatch {
+	return &StopWatch{action: actionName, start: t, stop: time.Time{}}
 }
 
 type StopWatch struct {
-	txnId, processName string
+	txnId, action      string
 	start, stop, split time.Time
+	logOn              int
 	// User defined logger function.
 	Logger func(string, ...interface{})
 }
@@ -37,32 +56,58 @@ var now = func() time.Time {
 	return time.Now()
 }
 
-func (s *StopWatch) Stop() *StopWatch {
-	s.stop = now()
-	s.Info("TimerStop",
-		"txnId", s.txnId,
-		"process", s.processName,
-		"duration", s.duration().String(),
-	)
+func (s *StopWatch) Start() *StopWatch {
+	s.start = now()
+
+	if s.logOn&LogStart != 0 {
+		s.Info("Start",
+			"action", s.action,
+			"txnId", s.txnId,
+		)
+	}
 	return s
 }
 
-func (s *StopWatch) Start() *StopWatch {
-	s.start = now()
-	s.Info("TimerStart",
-		"txnId", s.txnId,
-		"process", s.processName,
-	)
+func (s *StopWatch) Stop() *StopWatch {
+	s.stop = now()
+	if s.logOn&LogStop != 0 {
+		s.Info("Finish",
+			"action", s.action,
+			"txnId", s.txnId,
+			"duration", s.duration().String(),
+		)
+	}
+	return s
+}
+
+// stop with error
+func (s *StopWatch) StopE(err error) *StopWatch {
+	s.stop = now()
+
+	msg := "Finish"
+	if err != nil {
+		msg += " with error"
+	}
+
+	if s.logOn&LogStop != 0 {
+		s.Info(msg,
+			"action", s.action,
+			"txnId", s.txnId,
+			"duration", s.duration().String(),
+		)
+	}
 	return s
 }
 
 func (s *StopWatch) Split() *StopWatch {
 	s.split = now()
-	s.Info("TimerSplit",
-		"txnId", s.txnId,
-		"process", s.processName,
-		"duration", s.splitDuration().String(),
-	)
+	if s.logOn&LogSplit != 0 {
+		s.Info("Split",
+			"action", s.action,
+			"txnId", s.txnId,
+			"duration", s.splitDuration().String(),
+		)
+	}
 	return s
 }
 

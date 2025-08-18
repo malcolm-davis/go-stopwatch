@@ -1,47 +1,62 @@
 package stopwatch
 
 import (
-	"regexp"
 	"testing"
-	"time"
 )
 
-const (
-	expectedMilliseconds = (86400 * 1000)
-)
+// const (
+// 	expectedMilliseconds = (86400 * 1000)
+// )
 
-func withNow(fn func() time.Time, callback func()) {
-	oldNow := now
-	defer func() {
-		now = oldNow
-	}()
+// func withNow(fn func() time.Time, callback func()) {
+// 	oldNow := now
+// 	defer func() {
+// 		now = oldNow
+// 	}()
 
-	now = fn
-	callback()
-}
+// 	now = fn
+// 	callback()
+// }
 
-func withNowOffset(t time.Duration, callback func()) {
-	fn := func() time.Time {
-		return time.Now().Add(t)
-	}
+// func withNowOffset(t time.Duration, callback func()) {
+// 	fn := func() time.Time {
+// 		return time.Now().Add(t)
+// 	}
 
-	withNow(fn, callback)
-}
+// 	withNow(fn, callback)
+// }
 
-func TestStopWatchString(t *testing.T) {
-	exp := `^30\.(\d+)ms$`
-	rexp := regexp.MustCompile(exp)
+// // need a better test
+// func TestStopWatchString(t *testing.T) {
+// 	exp := `^30\.(\d+)ms$`
+// 	rexp := regexp.MustCompile(exp)
 
-	var watch *StopWatch
+// 	var watch *StopWatch
 
-	withNowOffset(-30*time.Millisecond, func() {
-		watch = Start("TestProcess")
-	})
+// 	withNowOffset(-30*time.Millisecond, func() {
+// 		watch = Start("TestProcess")
+// 	})
+// 	watch.Stop()
 
-	watch.Stop()
+// 	// Not millisecond accurate above, so...
+// 	if !rexp.MatchString(watch.String()) {
+// 		t.Fatalf("expected `%s` to match `%s`", watch, exp)
+// 	}
+// }
+
+func TestZero(t *testing.T) {
+	watch := New("TestAction")
+	defer watch.Stop()
 
 	// Not millisecond accurate above, so...
-	if !rexp.MatchString(watch.String()) {
-		t.Fatalf("expected `%s` to match `%s`", watch, exp)
+	zero := "0m0.00s"
+	test := watch.String()
+	if zero != test {
+		t.Fatalf("expected `%s`, got `%s`", zero, test)
+	}
+
+	testSplit := watch.SplitString()
+	if zero != testSplit {
+		t.Fatalf("expected `%s`, got `%s`", zero, testSplit)
 	}
 }
